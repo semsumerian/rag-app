@@ -1,24 +1,24 @@
 # Быстрый запуск RAG Application
 
-Краткая инструкция для повседневного использования на этом компьютере.
+Краткая инструкция для повседневного использования.
 
 ## ⚡ Быстрый старт (3 окна)
 
 ### Окно 1 - Сервер:
 ```powershell
-cd C:\Users\Sem\RAG\RAG\rag-app\server
+cd server
 npm run dev
 ```
 
 ### Окно 2 - Клиент:
 ```powershell
-cd C:\Users\Sem\RAG\RAG\rag-app\client
+cd client
 npm run dev
 ```
 
 ### Окно 3 - Туннель (для доступа извне):
 ```powershell
-C:\Users\Sem\cloudflared.exe tunnel --url http://localhost:5173
+cloudflared.exe tunnel --url http://localhost:5173
 ```
 
 **Готово!** Открывайте URL из вывода туннеля.
@@ -28,7 +28,7 @@ C:\Users\Sem\cloudflared.exe tunnel --url http://localhost:5173
 ## 📋 Чек-лист перед запуском
 
 - [ ] LM Studio запущен с моделями
-- [ ] Сервер API в LM Studio активен на http://192.168.0.11:1235
+- [ ] Сервер API в LM Studio активен на порту 1235
 
 ---
 
@@ -47,7 +47,7 @@ C:\"Program Files"\nodejs\npm run dev
 **Туннель не создает URL**
 ```powershell
 # Проверьте, что cloudflared скачан:
-C:\Users\Sem\cloudflared.exe --version
+cloudflared.exe --version
 ```
 
 ---

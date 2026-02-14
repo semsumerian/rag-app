@@ -131,7 +131,7 @@ DocumentStore сохраняет метаданные документа
 ## Безопасность
 
 ### Аутентификация
-- Простая HTTP Basic Auth (admin/admin)
+- Простая HTTP Basic Auth
 - Сохранение в localStorage
 - Защита роутов на клиенте
 
@@ -146,9 +146,9 @@ DocumentStore сохраняет метаданные документа
 ```typescript
 {
   lmStudio: {
-    baseURL: 'http://192.168.0.11:1235/v1',  // LM Studio API
-    llmModel: 'qwen/qwen3-vl-8b',
-    embeddingModel: 'text-embedding-qwen3-embedding-0.6b'
+    baseURL: process.env.LM_STUDIO_URL || 'http://localhost:1235/v1',
+    llmModel: process.env.LLM_MODEL || 'qwen/qwen3-vl-8b',
+    embeddingModel: process.env.EMBEDDING_MODEL || 'text-embedding-qwen3-embedding-0.6b'
   },
   server: {
     port: 3000,
@@ -218,11 +218,3 @@ npm run dev
 # Туннель (опционально)
 cloudflared.exe tunnel --url http://localhost:5173
 ```
-
-## Лицензия
-
-MIT
-
----
-
-*Документация актуальна для версии от 13.02.2026*
