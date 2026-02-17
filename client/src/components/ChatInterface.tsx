@@ -302,7 +302,8 @@ const ChatInterface: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            height: '100%',
+            width: '100%',
+            minHeight: '100%',
             color: colors.textMuted,
             padding: '20px',
           }}>
@@ -341,12 +342,15 @@ const ChatInterface: React.FC = () => {
             {/* Centered Input Field */}
             <div style={{
               width: '100%',
-              maxWidth: '700px',
-              margin: '0 auto',
+              display: 'flex',
+              justifyContent: 'center',
             }}>
               <form
                 onSubmit={handleSubmit}
                 style={{
+                  width: '100%',
+                  maxWidth: '700px',
+                  margin: '0 auto',
                   display: 'flex',
                   alignItems: 'flex-end',
                   gap: '8px',

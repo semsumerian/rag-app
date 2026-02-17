@@ -28,13 +28,6 @@ const MenuIcon = () => (
   </svg>
 );
 
-const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
-
 const SettingsIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
@@ -241,7 +234,7 @@ function App() {
               
               {/* Samson Chat Text */}
               <span style={{
-                fontSize: '16px',
+                fontSize: '20px',
                 fontWeight: '600',
                 color: colors.text,
               }}>
@@ -289,7 +282,6 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
                 padding: '10px 16px',
                 backgroundColor: colors.bgActive,
                 border: `1px solid ${colors.border}`,
@@ -307,14 +299,14 @@ function App() {
                 e.currentTarget.style.backgroundColor = colors.bgActive;
               }}
             >
-              <PlusIcon />
-              <span>Новый чат</span>
+              <span style={{ width: '100%', textAlign: 'center' }}>+ Новый чат</span>
             </button>
           </div>
 
           {/* Sidebar Footer */}
           <div style={{
             padding: '12px',
+            marginTop: 'auto',
             borderTop: `1px solid ${colors.border}`,
             display: 'flex',
             flexDirection: 'column',

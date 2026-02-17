@@ -18,6 +18,24 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+const normalizeFilename = (filename: string): string => {
+  if (/[А-Яа-яЁё]/.test(filename)) {
+    return filename;
+  }
+
+  if (!/[ÐÑ]/.test(filename)) {
+    return filename;
+  }
+
+  try {
+    const bytes = Uint8Array.from(filename, (char) => char.charCodeAt(0) & 0xff);
+    const decoded = new TextDecoder('utf-8').decode(bytes);
+    return decoded.includes('�') ? filename : decoded;
+  } catch {
+    return filename;
+  }
+};
+
 const DocumentList: React.FC<DocumentListProps> = ({ documents, onDelete, deleting, compact }) => {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
@@ -93,7 +111,7 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents, onDelete, deleti
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 }}>
-                  📄 {doc.originalName}
+                  📄 {normalizeFilename(doc.originalName)}
                 </div>
                 <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '2px' }}>
                   {formatFileSize(doc.size)}
@@ -185,7 +203,7 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents, onDelete, deleti
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}>
-                📄 {doc.originalName}
+                📄 {normalizeFilename(doc.originalName)}
               </div>
               <div style={{ fontSize: '13px', color: colors.textMuted }}>
                 {formatFileSize(doc.size)} • {new Date(doc.uploadedAt).toLocaleString('ru-RU')}
