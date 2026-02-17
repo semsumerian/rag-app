@@ -1,6 +1,7 @@
 import React, { useCallback, useContext } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { ThemeContext } from '../App';
+import { getDeepSeekColors } from '../styles/deepseek';
 
 interface FileUploaderProps {
   onUpload: (file: File) => void;
@@ -30,23 +31,12 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload, uploading }) => {
     multiple: false
   });
 
-  // Цвета в зависимости от темы
-  const colors = isDark ? {
-    border: '#475569',
-    borderActive: '#6366f1',
-    bg: '#0f172a',
-    bgActive: 'rgba(99, 102, 241, 0.1)',
-    text: '#f1f5f9',
-    textMuted: '#94a3b8',
-    primary: '#6366f1'
-  } : {
-    border: '#cbd5e1',
-    borderActive: '#6366f1',
-    bg: '#f8fafc',
-    bgActive: 'rgba(99, 102, 241, 0.05)',
-    text: '#1e293b',
-    textMuted: '#64748b',
-    primary: '#6366f1'
+  // Цвета DeepSeek (unified)
+  const baseColors = getDeepSeekColors(isDark);
+  const colors = {
+    ...baseColors,
+    borderActive: '#509fff',
+    bgActive: isDark ? 'rgba(80, 159, 255, 0.1)' : 'rgba(99, 102, 241, 0.1)',
   };
 
   return (

@@ -1,13 +1,12 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import FileUploader from './components/FileUploader';
-import DocumentList from './components/DocumentList';
 import ChatInterface from './components/ChatInterface';
 import Login from './components/Login';
-import ThemeToggle from './components/ThemeToggle';
-import { uploadFile, getDocuments, deleteDocument } from './services/api';
+import Settings from './components/Settings';
+import { getDocuments, deleteDocument, uploadFile } from './services/api';
 import { Document } from './types';
+import { getDeepSeekColors } from './styles/deepseek';
 
-// Определение типов темы
+// Theme types
 type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
@@ -20,47 +19,78 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {}
 });
 
-// Темы
-const themes = {
-  dark: {
-    bg: '#0f172a',
-    bgSecondary: '#1e293b',
-    bgCard: '#1e293b',
-    border: '#334155',
-    text: '#f1f5f9',
-    textMuted: '#94a3b8',
-    primary: '#6366f1',
-    primaryHover: '#4f46e5',
-    error: '#ef4444',
-    errorBg: 'rgba(239, 68, 68, 0.1)',
-    success: '#10b981',
-    info: '#3b82f6'
-  },
-  light: {
-    bg: '#f8fafc',
-    bgSecondary: '#ffffff',
-    bgCard: '#ffffff',
-    border: '#e2e8f0',
-    text: '#1e293b',
-    textMuted: '#64748b',
-    primary: '#6366f1',
-    primaryHover: '#4f46e5',
-    error: '#ef4444',
-    errorBg: 'rgba(239, 68, 68, 0.1)',
-    success: '#10b981',
-    info: '#3b82f6'
-  }
-};
+// Icons as components
+const MenuIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"></line>
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
+
+const SettingsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+);
+
+const SunIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    <polyline points="16 17 21 12 16 7"></polyline>
+    <line x1="21" y1="12" x2="9" y2="12"></line>
+  </svg>
+);
+
+const ChevronLeftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+);
+
+const ChevronRightIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+);
 
 function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [theme, setTheme] = useState<Theme>('dark');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Загрузка темы из localStorage
+  // Load theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('rag_theme') as Theme;
     if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
@@ -68,7 +98,7 @@ function App() {
     }
   }, []);
 
-  // Сохранение темы в localStorage
+  // Save theme to localStorage
   useEffect(() => {
     localStorage.setItem('rag_theme', theme);
   }, [theme]);
@@ -99,6 +129,23 @@ function App() {
     }
   };
 
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('rag_auth');
+    setIsAuthenticated(false);
+  };
+
+  const handleNewChat = () => {
+    // Clear chat messages in ChatInterface would need to be implemented
+    window.location.reload(); // Simple reset for now
+  };
+
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
   const handleUpload = async (file: File) => {
     setUploading(true);
     setError(null);
@@ -107,7 +154,7 @@ function App() {
       const result = await uploadFile(file);
       setDocuments(prev => [...prev, result.document]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload file');
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки файла');
     } finally {
       setUploading(false);
     }
@@ -121,22 +168,24 @@ function App() {
       await deleteDocument(id);
       setDocuments(prev => prev.filter(doc => doc.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete document');
+      setError(err instanceof Error ? err.message : 'Ошибка удаления документа');
     } finally {
       setDeleting(null);
     }
   };
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+  // Helper function for Russian pluralization
+  const getDocumentCountText = (count: number): string => {
+    if (count === 0) return '0 документов';
+    if (count === 1) return '1 документ';
+    if (count >= 2 && count <= 4) return `${count} документа`;
+    return `${count} документов`;
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('rag_auth');
-    setIsAuthenticated(false);
-  };
+  const isDark = theme === 'dark';
 
-  const currentTheme = themes[theme];
+  // Theme colors - DeepSeek style (unified)
+  const colors = getDeepSeekColors(isDark);
 
   if (!isAuthenticated) {
     return (
@@ -148,296 +197,381 @@ function App() {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div style={{ 
-        minHeight: '100vh', 
-        backgroundColor: currentTheme.bg,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        color: currentTheme.text,
-        transition: 'background-color 0.3s ease, color 0.3s ease'
-      }}>
-        {/* Header */}
-        <header style={{ 
-          backgroundColor: currentTheme.bgSecondary, 
-          color: currentTheme.text, 
-          padding: '16px 20px', 
-          borderBottom: `1px solid ${currentTheme.border}`,
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          transition: 'background-color 0.3s ease, border-color 0.3s ease',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 auto' }}>
+      <div 
+        className="app-container"
+        style={{ 
+          display: 'flex',
+          height: '100vh',
+          backgroundColor: colors.bg,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          color: colors.text,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Sidebar */}
+        <aside 
+          style={{
+            width: sidebarOpen ? '260px' : '0',
+            minWidth: sidebarOpen ? '260px' : '0',
+            backgroundColor: colors.bgSidebar,
+            borderRight: `1px solid ${colors.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'all 0.3s ease',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Sidebar Header */}
+          <div style={{
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}>
+            {/* Left side: Bot Icon + Samson Chat */}
             <div style={{
-              width: '36px',
-              height: '36px',
-              background: `linear-gradient(135deg, ${currentTheme.primary}, #8b5cf6)`,
-              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              flexShrink: 0
+              gap: '12px',
+              flex: 1,
             }}>
-              📚
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontSize: 'clamp(16px, 2.5vw, 20px)', fontWeight: '700', whiteSpace: 'nowrap' }}>RAG Application</h1>
-              <p style={{ 
-                margin: '2px 0 0 0', 
-                color: currentTheme.textMuted, 
-                fontSize: 'clamp(11px, 1.5vw, 13px)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                Загружайте документы и общайтесь с ними через AI
-              </p>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <ThemeToggle />
-            
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'transparent',
-                color: currentTheme.textMuted,
-                border: `1px solid ${currentTheme.border}`,
+              {/* Bot Icon */}
+              <div style={{
+                width: '32px',
+                height: '32px',
+                background: `linear-gradient(135deg, ${colors.primary}, #8b5cf6)`,
                 borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                flexShrink: 0,
+              }}>
+                🤖
+              </div>
+              
+              {/* Samson Chat Text */}
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: colors.text,
+              }}>
+                Samson Chat
+              </span>
+            </div>
+            
+            {/* Sidebar Toggle */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                padding: '8px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '6px',
+                color: colors.textMuted,
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                whiteSpace: 'nowrap'
+                justifyContent: 'center',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = currentTheme.border;
-                e.currentTarget.style.color = currentTheme.text;
+                e.currentTarget.style.backgroundColor = colors.bgHover;
+                e.currentTarget.style.color = colors.text;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = currentTheme.textMuted;
+                e.currentTarget.style.color = colors.textMuted;
               }}
+              title="Закрыть боковую панель"
             >
-              <span>🚪</span> <span className="logout-text">Выйти</span>
+              <MenuIcon />
             </button>
           </div>
-        </header>
-
-        <main style={{ 
-          maxWidth: '1600px', 
-          margin: '0 auto', 
-          padding: '16px',
-          width: '100%',
-          boxSizing: 'border-box'
-        }}>
-          {/* Error */}
-          {error && (
-            <div style={{ 
-              backgroundColor: currentTheme.errorBg, 
-              color: currentTheme.error, 
-              padding: '12px 16px', 
-              borderRadius: '10px', 
-              marginBottom: '16px',
-              border: `1px solid ${currentTheme.error}`,
-              fontSize: '14px',
-              fontWeight: '500'
-            }}>
-              <span style={{ marginRight: '8px' }}>⚠️</span>
-              {error}
-            </div>
-          )}
-
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
-            gap: '16px',
-            alignItems: 'stretch'
+          
+          {/* New Chat Button - below header */}
+          <div style={{
+            padding: '0 16px 12px 16px',
           }}>
-            {/* Left column - Upload, Documents & Info */}
-            <div id="left-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ 
-                backgroundColor: currentTheme.bgCard, 
-                padding: '20px', 
-                borderRadius: '12px', 
-                border: `1px solid ${currentTheme.border}`,
-                boxShadow: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                transition: 'background-color 0.3s ease, border-color 0.3s ease'
-              }}>
-                <h2 style={{ 
-                  margin: '0 0 16px 0', 
-                  fontSize: '16px', 
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <span>📤</span> Загрузка документов
-                </h2>
-                <FileUploader onUpload={handleUpload} uploading={uploading} />
-              </div>
+            <button
+              onClick={handleNewChat}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                backgroundColor: colors.bgActive,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '8px',
+                color: colors.text,
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bgHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bgActive;
+              }}
+            >
+              <PlusIcon />
+              <span>Новый чат</span>
+            </button>
+          </div>
 
-              <div style={{ 
-                backgroundColor: currentTheme.bgCard, 
-                padding: '20px', 
-                borderRadius: '12px', 
-                border: `1px solid ${currentTheme.border}`,
-                boxShadow: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                transition: 'background-color 0.3s ease, border-color 0.3s ease'
-              }}>
-                <DocumentList 
-                  documents={documents} 
-                  onDelete={handleDelete} 
-                  deleting={deleting} 
-                />
-              </div>
+          {/* Sidebar Footer */}
+          <div style={{
+            padding: '12px',
+            borderTop: `1px solid ${colors.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                color: colors.textSecondary,
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bgHover;
+                e.currentTarget.style.color = colors.text;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = colors.textSecondary;
+              }}
+            >
+              <span style={{ flexShrink: 0 }}>
+                {isDark ? <SunIcon /> : <MoonIcon />}
+              </span>
+              <span>{isDark ? 'Светлая тема' : 'Темная тема'}</span>
+            </button>
 
-              {/* Info - теперь под загруженными документами */}
-              <div style={{ 
-                backgroundColor: currentTheme.bgSecondary, 
-                padding: '20px', 
-                borderRadius: '12px',
-                border: `1px solid ${currentTheme.border}`,
-                transition: 'background-color 0.3s ease, border-color 0.3s ease'
+            {/* Settings */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                color: colors.textSecondary,
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bgHover;
+                e.currentTarget.style.color = colors.text;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = colors.textSecondary;
+              }}
+            >
+              <span style={{ flexShrink: 0 }}>
+                <SettingsIcon />
+              </span>
+              <span>Параметры</span>
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                color: colors.textSecondary,
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bgHover;
+                e.currentTarget.style.color = colors.text;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = colors.textSecondary;
+              }}
+            >
+              <span style={{ flexShrink: 0 }}>
+                <LogoutIcon />
+              </span>
+              <span>Выйти</span>
+            </button>
+
+            {/* User Profile - at the bottom */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px',
+              marginTop: '8px',
+              borderTop: `1px solid ${colors.border}`,
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: colors.primary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '600',
               }}>
-                <h3 style={{ 
-                  margin: '0 0 12px 0', 
-                  fontSize: '14px', 
-                  fontWeight: '600',
-                  color: currentTheme.text
+                A
+              </div>
+              <div style={{
+                flex: 1,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: colors.text,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}>
-                  ℹ️ Информация о системе
-                </h3>
-                <div style={{ 
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  color: currentTheme.textMuted,
-                  fontSize: '13px'
+                  admin
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: colors.textMuted,
                 }}>
-                  <div style={{ 
-                    padding: '10px 14px', 
-                    backgroundColor: currentTheme.bg, 
-                    borderRadius: '8px',
-                    border: `1px solid ${currentTheme.border}`,
-                    transition: 'background-color 0.3s ease, border-color 0.3s ease'
-                  }}>
-                    <strong style={{ color: currentTheme.primary }}>LLM:</strong> qwen/qwen3-vl-8b
-                  </div>
-                  <div style={{ 
-                    padding: '10px 14px', 
-                    backgroundColor: currentTheme.bg, 
-                    borderRadius: '8px',
-                    border: `1px solid ${currentTheme.border}`,
-                    transition: 'background-color 0.3s ease, border-color 0.3s ease'
-                  }}>
-                    <strong style={{ color: currentTheme.primary }}>Embedding:</strong> text-embedding-qwen3-embedding-0.6b
-                  </div>
-                  <div style={{ 
-                    padding: '10px 14px', 
-                    backgroundColor: currentTheme.bg, 
-                    borderRadius: '8px',
-                    border: `1px solid ${currentTheme.border}`,
-                    transition: 'background-color 0.3s ease, border-color 0.3s ease'
-                  }}>
-                    <strong style={{ color: currentTheme.primary }}>Чанкинг:</strong> 1024 токена, перекрытие 100
-                  </div>
-                  <div style={{ 
-                    padding: '10px 14px', 
-                    backgroundColor: currentTheme.bg, 
-                    borderRadius: '8px',
-                    border: `1px solid ${currentTheme.border}`,
-                    transition: 'background-color 0.3s ease, border-color 0.3s ease'
-                  }}>
-                    <strong style={{ color: currentTheme.primary }}>Хранилище:</strong> JSON + in-memory
-                  </div>
-                  <div style={{ 
-                    padding: '10px 14px', 
-                    backgroundColor: currentTheme.bg, 
-                    borderRadius: '8px',
-                    border: `1px solid ${currentTheme.border}`,
-                    transition: 'background-color 0.3s ease, border-color 0.3s ease'
-                  }}>
-                    <strong style={{ color: currentTheme.primary }}>Форматы:</strong> PDF, DOCX, TXT
-                  </div>
+                  {getDocumentCountText(documents.length)}
                 </div>
               </div>
             </div>
 
-            {/* Right column - Chat */}
-            <div id="chat-column" style={{ 
-              backgroundColor: currentTheme.bgCard, 
-              padding: '20px', 
-              borderRadius: '12px', 
-              border: `1px solid ${currentTheme.border}`,
-              boxShadow: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              minHeight: '500px',
-              maxHeight: 'calc(100vh - 140px)',
-              overflow: 'hidden',
-              transition: 'background-color 0.3s ease, border-color 0.3s ease',
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main style={{ 
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
+          {/* Header */}
+          <header style={{
+            height: '48px',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 16px',
+            backgroundColor: colors.bg,
+          }}>
+            <div style={{
               display: 'flex',
-              flexDirection: 'column'
+              alignItems: 'center',
+              gap: '12px',
             }}>
-              <h2 style={{ 
-                margin: '0 0 16px 0', 
-                fontSize: '16px', 
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                flexShrink: 0
-              }}>
-                <span>💬</span> Чат с документами
-              </h2>
-              <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-                <ChatInterface />
-              </div>
+              {!sidebarOpen && (
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  style={{
+                    padding: '8px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: colors.textMuted,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.bgHover;
+                    e.currentTarget.style.color = colors.text;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = colors.textMuted;
+                  }}
+                  title="Открыть боковую панель"
+                >
+                  <MenuIcon />
+                </button>
+              )}
             </div>
+          </header>
+
+          {/* Error Toast */}
+          {error && (
+            <div style={{ 
+              position: 'absolute',
+              top: '60px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)', 
+              color: '#ef4444', 
+              padding: '12px 20px', 
+              borderRadius: '8px', 
+              border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`,
+              fontSize: '14px',
+              fontWeight: '500',
+              zIndex: 50,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}>
+              {error}
+            </div>
+          )}
+
+          {/* Chat Container */}
+          <div style={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <ChatInterface />
           </div>
         </main>
 
-        <style>{`
-          @media (max-width: 768px) {
-            .logout-text {
-              display: none;
-            }
-          }
-          
-          @media (max-width: 480px) {
-            header {
-              padding: 12px 16px !important;
-            }
-            
-            main {
-              padding: 12px !important;
-            }
-            
-            h1 {
-              font-size: 16px !important;
-            }
-            
-            header p {
-              display: none;
-            }
-          }
-
-          /* Выравнивание высоты чата с левой колонкой */
-          @media (min-width: 768px) {
-            #chat-column {
-              height: auto !important;
-            }
-          }
-        `}</style>
+        {/* Settings Modal */}
+        <Settings 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          theme={theme}
+          documents={documents}
+          onUpload={handleUpload}
+          onDelete={handleDelete}
+          uploading={uploading}
+          deleting={deleting}
+        />
       </div>
     </ThemeContext.Provider>
   );

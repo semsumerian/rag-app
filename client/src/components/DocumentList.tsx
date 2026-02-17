@@ -1,11 +1,13 @@
 import React, { useContext } from 'react';
 import { Document } from '../types';
 import { ThemeContext } from '../App';
+import { getDeepSeekColors } from '../styles/deepseek';
 
 interface DocumentListProps {
   documents: Document[];
   onDelete: (id: string) => void;
   deleting: string | null;
+  compact?: boolean;
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -16,27 +18,15 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const DocumentList: React.FC<DocumentListProps> = ({ documents, onDelete, deleting }) => {
+const DocumentList: React.FC<DocumentListProps> = ({ documents, onDelete, deleting, compact }) => {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
 
-  // Цвета в зависимости от темы
-  const colors = isDark ? {
-    bg: '#0f172a',
-    bgCard: '#1e293b',
-    border: '#334155',
-    text: '#f1f5f9',
-    textMuted: '#94a3b8',
-    primary: '#6366f1',
-    error: '#ef4444',
-    errorHover: '#dc2626'
-  } : {
-    bg: '#f8fafc',
-    bgCard: '#ffffff',
-    border: '#e2e8f0',
-    text: '#1e293b',
-    textMuted: '#64748b',
-    primary: '#6366f1',
+  // Цвета DeepSeek (unified)
+  const baseColors = getDeepSeekColors(isDark);
+  const colors = {
+    ...baseColors,
+    bgCard: isDark ? '#2f3033' : '#fafaf5',
     error: '#ef4444',
     errorHover: '#dc2626'
   };
@@ -55,6 +45,99 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents, onDelete, deleti
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📂</div>
         <p style={{ margin: 0, fontSize: '16px' }}>Нет загруженных документов</p>
         <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.7 }}>Загрузите первый документ выше</p>
+      </div>
+    );
+  }
+
+  // Компактный режим для sidebar
+  if (compact) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        maxHeight: '300px',
+        overflow: 'auto'
+      }}>
+        {documents.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '20px', 
+            color: colors.textMuted,
+            fontSize: '13px'
+          }}>
+            Нет документов
+          </div>
+        ) : (
+          documents.map((doc) => (
+            <div
+              key={doc.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 12px',
+                backgroundColor: colors.bg,
+                borderRadius: '8px',
+                border: `1px solid ${colors.border}`,
+                transition: 'all 0.2s ease',
+                gap: '8px'
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ 
+                  fontSize: '13px',
+                  fontWeight: '500', 
+                  color: colors.text,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  📄 {doc.originalName}
+                </div>
+                <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '2px' }}>
+                  {formatFileSize(doc.size)}
+                </div>
+              </div>
+              
+              <button
+                onClick={() => onDelete(doc.id)}
+                disabled={deleting === doc.id}
+                style={{
+                  padding: '6px',
+                  backgroundColor: 'transparent',
+                  color: colors.error,
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: deleting === doc.id ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  opacity: deleting === doc.id ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                  flexShrink: 0
+                }}
+                onMouseEnter={(e) => {
+                  if (deleting !== doc.id) {
+                    e.currentTarget.style.backgroundColor = colors.error;
+                    e.currentTarget.style.color = 'white';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = colors.error;
+                }}
+                title="Удалить"
+              >
+                {deleting === doc.id ? '⏳' : '🗑️'}
+              </button>
+            </div>
+          ))
+        )}
+        
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }

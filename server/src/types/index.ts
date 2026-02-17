@@ -38,3 +38,14 @@ export interface ChatResponse {
     relevance: number;
   }[];
 }
+
+export interface ModelSettings {
+  url: string;
+  modelName: string;
+  apiKey: string;
+}
+
+export interface Settings {
+  llm: ModelSettings;
+  embedding: ModelSettings;
+}

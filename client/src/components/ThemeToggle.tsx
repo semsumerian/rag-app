@@ -5,34 +5,43 @@ const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useContext(ThemeContext);
 
   const isDark = theme === 'dark';
+  
+  const currentTheme = {
+    border: isDark ? '#334155' : '#e2e8f0',
+    textMuted: isDark ? '#94a3b8' : '#64748b',
+    text: isDark ? '#f1f5f9' : '#1e293b'
+  };
 
   return (
     <button
       onClick={toggleTheme}
       style={{
-        padding: '10px 16px',
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-        color: isDark ? '#f1f5f9' : '#1e293b',
-        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+        padding: '8px 16px',
+        backgroundColor: 'transparent',
+        color: currentTheme.textMuted,
+        border: `1px solid ${currentTheme.border}`,
         borderRadius: '8px',
         cursor: 'pointer',
-        fontSize: '14px',
+        fontSize: '13px',
         fontWeight: '500',
         transition: 'all 0.2s ease',
         display: 'flex',
         alignItems: 'center',
-        gap: '8px'
+        gap: '4px',
+        whiteSpace: 'nowrap'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+        e.currentTarget.style.backgroundColor = currentTheme.border;
+        e.currentTarget.style.color = currentTheme.text;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.color = currentTheme.textMuted;
       }}
       title={isDark ? 'Переключить на светлую тему' : 'Переключить на темную тему'}
     >
-      <span style={{ fontSize: '18px' }}>{isDark ? '☀️' : '🌙'}</span>
-      <span>{isDark ? 'Светлая' : 'Темная'}</span>
+      <span>{isDark ? '☀️' : '🌙'}</span>
+      <span className="theme-text">{isDark ? 'Светлая' : 'Темная'}</span>
     </button>
   );
 };

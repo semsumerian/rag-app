@@ -1,11 +1,14 @@
 import OpenAI from 'openai';
-import { config } from '../config';
 import { ChatMessage } from '../types';
+import { getLLMConfig } from './settingsStore';
 
-const openai = new OpenAI({
-  baseURL: config.lmStudio.baseURL,
-  apiKey: 'not-needed'
-});
+function createOpenAIClient() {
+  const llmConfig = getLLMConfig();
+  return new OpenAI({
+    baseURL: llmConfig.url,
+    apiKey: llmConfig.apiKey || 'not-needed'
+  });
+}
 
 interface Source {
   filename: string;
@@ -30,8 +33,10 @@ export async function* generateChatResponse(
   ];
   
   try {
+    const openai = createOpenAIClient();
+    const llmConfig = getLLMConfig();
     const stream = await openai.chat.completions.create({
-      model: config.lmStudio.llmModel,
+      model: llmConfig.modelName,
       messages,
       stream: true,
       temperature: 0.7,

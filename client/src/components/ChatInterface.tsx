@@ -4,6 +4,25 @@ import remarkGfm from 'remark-gfm';
 import { ChatMessage, Source } from '../types';
 import { streamChat } from '../services/api';
 import { ThemeContext } from '../App';
+import { getDeepSeekColors } from '../styles/deepseek';
+
+// Icons
+const SendIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13"></line>
+    <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+  </svg>
+);
+
+const DocumentIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
+    <line x1="16" y1="13" x2="8" y2="13"></line>
+    <line x1="16" y1="17" x2="8" y2="17"></line>
+    <polyline points="10 9 9 9 8 9"></polyline>
+  </svg>
+);
 
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -12,46 +31,11 @@ const ChatInterface: React.FC = () => {
   const [sources, setSources] = useState<Source[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { theme } = useContext(ThemeContext);
 
   const isDark = theme === 'dark';
-
-  // Цвета в зависимости от темы
-  const colors = isDark ? {
-    bg: '#0f172a',
-    bgMessageUser: '#6366f1',
-    bgMessageBot: '#1e293b',
-    border: '#334155',
-    text: '#f1f5f9',
-    textMuted: '#94a3b8',
-    primary: '#6366f1',
-    sourcesBg: 'rgba(99, 102, 241, 0.1)',
-    sourcesText: '#818cf8',
-    inputBg: '#1e293b',
-    inputBorder: '#475569',
-    buttonBg: '#10b981',
-    buttonHover: '#059669',
-    codeBg: '#1e293b',
-    codeBorder: '#334155',
-    inlineCodeBg: 'rgba(99, 102, 241, 0.2)'
-  } : {
-    bg: '#f8fafc',
-    bgMessageUser: '#6366f1',
-    bgMessageBot: '#ffffff',
-    border: '#e2e8f0',
-    text: '#1e293b',
-    textMuted: '#64748b',
-    primary: '#6366f1',
-    sourcesBg: '#fef3c7',
-    sourcesText: '#92400e',
-    inputBg: '#ffffff',
-    inputBorder: '#cbd5e1',
-    buttonBg: '#10b981',
-    buttonHover: '#059669',
-    codeBg: '#f1f5f9',
-    codeBorder: '#e2e8f0',
-    inlineCodeBg: 'rgba(99, 102, 241, 0.1)'
-  };
+  const colors = getDeepSeekColors(isDark);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,6 +44,14 @@ const ChatInterface: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px';
+    }
+  }, [input]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,21 +101,21 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  // Markdown компоненты с кастомными стилями
+  // Markdown components
   const markdownComponents = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline ? (
         <pre
           style={{
-            backgroundColor: colors.codeBg,
-            border: `1px solid ${colors.codeBorder}`,
+            backgroundColor: isDark ? '#2f3033' : '#f1f5f9',
+            border: `1px solid ${isDark ? '#5a5a69' : '#e2e8f0'}`,
             borderRadius: '8px',
             padding: '16px',
             overflow: 'auto',
-            fontSize: '13px',
-            lineHeight: '1.5',
-            margin: '12px 0'
+            fontSize: '14px',
+            lineHeight: '20px',
+            margin: '12px 0',
           }}
         >
           <code className={className} {...props}>
@@ -133,11 +125,11 @@ const ChatInterface: React.FC = () => {
       ) : (
         <code
           style={{
-            backgroundColor: colors.inlineCodeBg,
+            backgroundColor: isDark ? 'rgba(80, 159, 255, 0.15)' : 'rgba(80, 159, 255, 0.1)',
             padding: '2px 6px',
             borderRadius: '4px',
             fontSize: '14px',
-            fontFamily: 'monospace'
+            fontFamily: 'monospace',
           }}
           {...props}
         >
@@ -146,10 +138,10 @@ const ChatInterface: React.FC = () => {
       );
     },
     p({ children }: any) {
-      return <p style={{ margin: '8px 0', lineHeight: '1.6' }}>{children}</p>;
+      return <p style={{ margin: '8px 0', lineHeight: '28px' }}>{children}</p>;
     },
     h1({ children }: any) {
-      return <h1 style={{ margin: '16px 0 12px 0', fontSize: '20px', fontWeight: '700' }}>{children}</h1>;
+      return <h1 style={{ margin: '16px 0 12px 0', fontSize: '20px', fontWeight: '600' }}>{children}</h1>;
     },
     h2({ children }: any) {
       return <h2 style={{ margin: '14px 0 10px 0', fontSize: '18px', fontWeight: '600' }}>{children}</h2>;
@@ -164,10 +156,10 @@ const ChatInterface: React.FC = () => {
       return <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>;
     },
     li({ children }: any) {
-      return <li style={{ margin: '4px 0', lineHeight: '1.6' }}>{children}</li>;
+      return <li style={{ margin: '4px 0', lineHeight: '28px' }}>{children}</li>;
     },
     strong({ children }: any) {
-      return <strong style={{ fontWeight: '700' }}>{children}</strong>;
+      return <strong style={{ fontWeight: '600' }}>{children}</strong>;
     },
     em({ children }: any) {
       return <em style={{ fontStyle: 'italic' }}>{children}</em>;
@@ -176,11 +168,11 @@ const ChatInterface: React.FC = () => {
       return (
         <blockquote
           style={{
-            borderLeft: `4px solid ${colors.primary}`,
+            borderLeft: '4px solid #509fff',
             margin: '12px 0',
             padding: '8px 16px',
-            backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
-            borderRadius: '0 8px 8px 0'
+            backgroundColor: isDark ? 'rgba(80, 159, 255, 0.1)' : 'rgba(80, 159, 255, 0.05)',
+            borderRadius: '0 8px 8px 0',
           }}
         >
           {children}
@@ -194,9 +186,9 @@ const ChatInterface: React.FC = () => {
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            color: colors.primary,
+            color: '#509fff',
             textDecoration: 'underline',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           {children}
@@ -210,7 +202,7 @@ const ChatInterface: React.FC = () => {
             style={{
               width: '100%',
               borderCollapse: 'collapse',
-              fontSize: '14px'
+              fontSize: '14px',
             }}
           >
             {children}
@@ -219,7 +211,7 @@ const ChatInterface: React.FC = () => {
       );
     },
     thead({ children }: any) {
-      return <thead style={{ backgroundColor: colors.codeBg }}>{children}</thead>;
+      return <thead style={{ backgroundColor: isDark ? '#2f3033' : '#f1f5f9' }}>{children}</thead>;
     },
     th({ children }: any) {
       return (
@@ -227,8 +219,8 @@ const ChatInterface: React.FC = () => {
           style={{
             padding: '10px 12px',
             textAlign: 'left',
-            borderBottom: `2px solid ${colors.border}`,
-            fontWeight: '600'
+            borderBottom: `2px solid ${isDark ? '#5a5a69' : '#e2e8f0'}`,
+            fontWeight: '600',
           }}
         >
           {children}
@@ -240,7 +232,7 @@ const ChatInterface: React.FC = () => {
         <td
           style={{
             padding: '8px 12px',
-            borderBottom: `1px solid ${colors.border}`
+            borderBottom: `1px solid ${isDark ? '#5a5a69' : '#e2e8f0'}`,
           }}
         >
           {children}
@@ -248,7 +240,7 @@ const ChatInterface: React.FC = () => {
       );
     },
     hr() {
-      return <hr style={{ border: 'none', borderTop: `1px solid ${colors.border}`, margin: '16px 0' }} />;
+      return <hr style={{ border: 'none', borderTop: `1px solid ${isDark ? '#5a5a69' : '#e2e8f0'}`, margin: '16px 0' }} />;
     }
   };
 
@@ -259,95 +251,234 @@ const ChatInterface: React.FC = () => {
       height: '100%',
       overflow: 'hidden',
       backgroundColor: colors.bg,
-      transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      position: 'relative',
     }}>
-      {/* Messages */}
+      {/* Messages Area */}
       <div 
         ref={messagesContainerRef}
         style={{ 
           flex: 1, 
           overflow: 'auto', 
-          padding: '20px',
-          transition: 'background-color 0.3s ease',
-          maxHeight: '100%'
+          padding: messages.length === 0 ? '0' : '0 0 140px 0',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {messages.length === 0 ? (
           <div style={{ 
-            textAlign: 'center', 
-            color: colors.textMuted, 
-            marginTop: '100px',
-            transition: 'color 0.3s ease'
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: colors.textMuted,
+            padding: '20px',
           }}>
-            <div style={{ 
-              width: '80px', 
-              height: '80px', 
-              margin: '0 auto 20px',
-              background: `linear-gradient(135deg, ${colors.primary}, #8b5cf6)`,
-              borderRadius: '20px',
+            {/* Bot icon and text in one row */}
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '40px'
+              gap: '16px',
+              marginBottom: '32px',
             }}>
-              💬
-            </div>
-            <p style={{ fontSize: '18px', marginBottom: '10px', fontWeight: '500', color: colors.text }}>
-              Добро пожаловать в RAG чат!
-            </p>
-            <p style={{ fontSize: '14px' }}>Загрузите документы и задайте вопрос</p>
-          </div>
-        ) : (
-          messages.map((msg, index) => (
-            <div
-              key={index}
-              style={{
+              <div style={{ 
+                width: '48px', 
+                height: '48px', 
+                background: `linear-gradient(135deg, #509fff, #4166d5)`,
+                borderRadius: '12px',
                 display: 'flex',
-                justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                marginBottom: '16px'
-              }}
-            >
-              <div
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '24px',
+                boxShadow: '0 10px 25px -5px rgba(80, 159, 255, 0.4)',
+                flexShrink: 0,
+              }}>
+                🤖
+              </div>
+              <p style={{ 
+                fontSize: '28px', 
+                fontWeight: '600', 
+                color: colors.text,
+                margin: 0,
+              }}>
+                Чем могу помочь?
+              </p>
+            </div>
+            
+            {/* Centered Input Field */}
+            <div style={{
+              width: '100%',
+              maxWidth: '700px',
+              margin: '0 auto',
+            }}>
+              <form
+                onSubmit={handleSubmit}
                 style={{
-                  maxWidth: '85%',
-                  padding: '14px 18px',
-                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  backgroundColor: msg.role === 'user' ? colors.bgMessageUser : colors.bgMessageBot,
-                  color: msg.role === 'user' ? 'white' : colors.text,
-                  border: msg.role === 'user' ? 'none' : `1px solid ${colors.border}`,
-                  wordBreak: 'break-word',
-                  fontSize: '15px',
-                  lineHeight: '1.5',
-                  boxShadow: msg.role === 'user' 
-                    ? '0 4px 12px rgba(99, 102, 241, 0.3)' 
-                    : isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
-                  transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease'
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: '8px',
+                  backgroundColor: colors.inputBg,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: '16px',
+                  padding: '12px 16px',
+                  boxShadow: isDark 
+                    ? '0 4px 20px rgba(0, 0, 0, 0.4)' 
+                    : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                {msg.role === 'user' ? (
-                  msg.content
-                ) : (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={markdownComponents}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
-                )}
-                {msg.role === 'assistant' && loading && index === messages.length - 1 && (
-                  <span style={{ 
-                    display: 'inline-block',
-                    width: '8px',
-                    height: '16px',
-                    backgroundColor: colors.primary,
-                    marginLeft: '4px',
-                    animation: 'pulse 1s infinite',
-                    borderRadius: '2px'
-                  }}></span>
-                )}
-              </div>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                  placeholder="Сообщение..."
+                  disabled={loading}
+                  rows={1}
+                  style={{
+                    flex: 1,
+                    padding: '4px 0',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    fontSize: '16px',
+                    outline: 'none',
+                    color: colors.text,
+                    fontFamily: 'inherit',
+                    resize: 'none',
+                    minHeight: '24px',
+                    maxHeight: '200px',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  style={{
+                    padding: '8px 10px',
+                    backgroundColor: loading || !input.trim() ? 'transparent' : colors.primary,
+                    color: loading || !input.trim() ? colors.textMuted : 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.5 : 1,
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading && input.trim()) {
+                      e.currentTarget.style.backgroundColor = colors.primaryHover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading && input.trim()) {
+                      e.currentTarget.style.backgroundColor = colors.primary;
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <span style={{
+                      display: 'inline-block',
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: 'white',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite',
+                    }} />
+                  ) : (
+                    <SendIcon />
+                  )}
+                </button>
+              </form>
             </div>
-          ))
+          </div>
+        ) : (
+          <div style={{ width: '100%', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                  alignItems: 'flex-start',
+                  marginBottom: '8px',
+                  width: '100%',
+                  justifyContent: msg.role === 'user' ? 'flex-start' : 'flex-start',
+                  paddingLeft: msg.role === 'user' ? '0' : '80px',
+                  paddingRight: msg.role === 'user' ? '80px' : '0',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  backgroundColor: msg.role === 'user' ? colors.primary : colors.bgSecondary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: msg.role === 'user' ? '16px' : '0',
+                  marginRight: msg.role === 'user' ? '0' : '16px',
+                  flexShrink: 0,
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: msg.role === 'user' ? 'white' : colors.text,
+                  marginTop: msg.role === 'assistant' ? '4px' : '4px',
+                }}>
+                  {msg.role === 'user' ? 'А' : '🤖'}
+                </div>
+
+                {/* Message Content */}
+                <div
+                  style={{
+                    maxWidth: '70%',
+                    padding: '4px 0',
+                    color: colors.text,
+                    fontSize: '16px',
+                    lineHeight: '28px',
+                    textAlign: 'left',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'pre-wrap',
+                    fontWeight: '400',
+                    marginLeft: msg.role === 'user' ? 'auto' : '0',
+                    marginRight: msg.role === 'user' ? '0' : 'auto',
+                  }}
+                >
+                  {msg.role === 'user' ? (
+                    <div style={{ fontWeight: '500' }}>{msg.content}</div>
+                  ) : (
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={markdownComponents}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
+                  {msg.role === 'assistant' && loading && index === messages.length - 1 && (
+                    <span style={{ 
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '16px',
+                      backgroundColor: colors.primary,
+                      marginLeft: '4px',
+                      animation: 'pulse 1s infinite',
+                      borderRadius: '2px',
+                    }}></span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -355,24 +486,26 @@ const ChatInterface: React.FC = () => {
       {/* Sources */}
       {sources.length > 0 && (
         <div style={{ 
-          padding: '14px 20px', 
-          backgroundColor: colors.sourcesBg, 
-          borderTop: `1px solid ${colors.border}`,
-          maxHeight: '120px', 
-          overflow: 'auto',
-          flexShrink: 0,
-          transition: 'background-color 0.3s ease, border-color 0.3s ease'
+          position: 'absolute',
+          bottom: '100px',
+          left: '20px',
+          right: '20px',
+          padding: '12px 16px', 
+          backgroundColor: isDark ? 'rgba(80, 159, 255, 0.1)' : 'rgba(80, 159, 255, 0.1)', 
+          borderRadius: '12px',
+          border: `1px solid ${colors.border}`,
+          zIndex: 10,
         }}>
           <div style={{ 
-            fontSize: '13px', 
+            fontSize: '12px', 
             fontWeight: '600', 
-            marginBottom: '8px', 
-            color: colors.sourcesText,
+            marginBottom: '6px', 
+            color: '#509fff',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
           }}>
-            <span>📚</span>
+            <DocumentIcon />
             Источники ({sources.length}):
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -380,106 +513,132 @@ const ChatInterface: React.FC = () => {
               <span
                 key={idx}
                 style={{
-                  fontSize: '12px',
+                  fontSize: '11px',
                   padding: '4px 10px',
-                  backgroundColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#fbbf24',
-                  color: isDark ? '#c7d2fe' : '#78350f',
+                  backgroundColor: isDark ? 'rgba(80, 159, 255, 0.2)' : 'rgba(80, 159, 255, 0.15)',
+                  color: isDark ? '#509fff' : '#509fff',
                   borderRadius: '20px',
                   fontWeight: '500',
-                  cursor: 'help'
+                  cursor: 'help',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
                 title={source.content.substring(0, 100) + '...'}
               >
-                {source.filename} ({(source.relevance * 100).toFixed(0)}%)
+                <DocumentIcon />
+                {source.filename}
               </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Input */}
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: 'flex',
-          padding: '16px 20px',
-          backgroundColor: colors.bgMessageBot,
-          borderTop: `1px solid ${colors.border}`,
-          gap: '12px',
-          flexShrink: 0,
-          transition: 'background-color 0.3s ease, border-color 0.3s ease'
-        }}
-      >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Введите ваш вопрос..."
-          disabled={loading}
-          style={{
-            flex: 1,
-            padding: '12px 18px',
-            backgroundColor: colors.inputBg,
-            border: `1px solid ${colors.inputBorder}`,
-            borderRadius: '24px',
-            fontSize: '15px',
-            outline: 'none',
-            color: colors.text,
-            transition: 'all 0.2s ease',
-            fontFamily: 'inherit'
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = colors.primary;
-            e.target.style.boxShadow = `0 0 0 3px ${isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.15)'}`;
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = colors.inputBorder;
-            e.target.style.boxShadow = 'none';
-          }}
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: colors.buttonBg,
-            color: 'white',
-            border: 'none',
-            borderRadius: '24px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading || !input.trim() ? 0.5 : 1,
-            fontWeight: '600',
-            fontSize: '15px',
-            transition: 'all 0.2s ease',
-            fontFamily: 'inherit',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-          }}
-          onMouseEnter={(e) => {
-            if (!loading && input.trim()) {
-              e.currentTarget.style.backgroundColor = colors.buttonHover;
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.4)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = colors.buttonBg;
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-          }}
-        >
-          {loading ? (
-            <span style={{
-              display: 'inline-block',
-              width: '18px',
-              height: '18px',
-              border: '2px solid rgba(255,255,255,0.3)',
-              borderTopColor: 'white',
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite'
-            }} />
-          ) : 'Отправить'}
-        </button>
-      </form>
+      {/* Input Area - Only show at bottom when there are messages */}
+      {messages.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '20px 20px 30px 20px',
+          background: isDark 
+            ? 'linear-gradient(to top, #292a2d 0%, #292a2d 80%, transparent 100%)' 
+            : 'linear-gradient(to top, #f1f5f9 0%, #f1f5f9 80%, transparent 100%)',
+        }}>
+          <div style={{
+            width: '100%',
+          }}>
+            <form
+              onSubmit={handleSubmit}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '8px',
+                backgroundColor: colors.inputBg,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '16px',
+                padding: '12px 16px',
+                boxShadow: isDark 
+                  ? '0 4px 20px rgba(0, 0, 0, 0.4)' 
+                  : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="Сообщение..."
+                disabled={loading}
+                rows={1}
+                style={{
+                  flex: 1,
+                  padding: '4px 0',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '16px',
+                  outline: 'none',
+                  color: colors.text,
+                  fontFamily: 'inherit',
+                  resize: 'none',
+                  minHeight: '24px',
+                  maxHeight: '200px',
+                }}
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                style={{
+                  padding: '8px 10px',
+                  backgroundColor: loading || !input.trim() ? 'transparent' : colors.primary,
+                  color: loading || !input.trim() ? colors.textMuted : 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && input.trim()) {
+                    e.currentTarget.style.backgroundColor = colors.primaryHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading && input.trim()) {
+                    e.currentTarget.style.backgroundColor = colors.primary;
+                  }
+                }}
+              >
+                {loading ? (
+                  <span style={{
+                    display: 'inline-block',
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: 'white',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                  }} />
+                ) : (
+                  <SendIcon />
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes pulse {

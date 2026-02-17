@@ -3,9 +3,11 @@ import cors from 'cors';
 import { config } from './config';
 import { initVectorStore } from './services/vectorStore';
 import { initDocumentStore } from './services/documentStore';
+import { initSettingsStore } from './services/settingsStore';
 import uploadRoutes from './routes/upload';
 import documentRoutes from './routes/documents';
 import chatRoutes from './routes/chat';
+import settingsRoutes from './routes/settings';
 
 const app = express();
 
@@ -17,6 +19,7 @@ app.use(express.json());
 app.use('/api/upload', uploadRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -33,6 +36,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 async function startServer() {
   try {
     // Initialize stores
+    initSettingsStore();
+    console.log('Settings store initialized');
+    
     await initVectorStore();
     console.log('Vector store initialized');
     

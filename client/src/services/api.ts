@@ -1,4 +1,4 @@
-import { Document, UploadResponse, ChatMessage, Source } from '../types';
+import { Document, UploadResponse, ChatMessage, Source, Settings } from '../types';
 
 const API_URL = '/api';
 
@@ -84,4 +84,32 @@ export async function* streamChat(
       }
     }
   }
+}
+
+export async function getSettings(): Promise<Settings> {
+  const response = await fetch(`${API_URL}/settings`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch settings');
+  }
+  
+  return response.json();
+}
+
+export async function updateSettings(settings: Settings): Promise<Settings> {
+  const response = await fetch(`${API_URL}/settings`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(settings)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update settings');
+  }
+  
+  const result = await response.json();
+  return result.settings;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { ThemeContext } from '../App';
+import { getDeepSeekColors } from '../styles/deepseek';
 
 interface LoginProps {
   onLogin: () => void;
@@ -28,33 +29,33 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const isDark = theme === 'dark';
 
-  // Цвета в зависимости от темы
+  // Цвета DeepSeek
   const colors = isDark ? {
-    bg: '#0f172a',
-    bgGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-    card: '#1e293b',
-    cardBorder: '#334155',
-    text: '#f1f5f9',
-    textMuted: '#94a3b8',
-    inputBg: '#0f172a',
-    inputBorder: '#475569',
-    inputBorderFocus: '#6366f1',
-    primary: '#6366f1',
-    primaryHover: '#4f46e5',
+    bg: '#292a2d',
+    bgGradient: 'linear-gradient(135deg, #292a2d 0%, #2f3033 50%, #292a2d 100%)',
+    card: '#2f3033',
+    cardBorder: '#5a5a69',
+    text: '#ffffff',
+    textMuted: '#9ca3af',
+    inputBg: '#404045',
+    inputBorder: '#5a5a69',
+    inputBorderFocus: '#509fff',
+    primary: '#509fff',
+    primaryHover: '#4166d5',
     error: '#ef4444',
     errorBg: 'rgba(239, 68, 68, 0.1)'
   } : {
-    bg: '#f1f5f9',
-    bgGradient: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%)',
-    card: '#ffffff',
-    cardBorder: '#e2e8f0',
-    text: '#1e293b',
-    textMuted: '#64748b',
-    inputBg: '#f8fafc',
-    inputBorder: '#cbd5e1',
-    inputBorderFocus: '#6366f1',
-    primary: '#6366f1',
-    primaryHover: '#4f46e5',
+    bg: '#f5f5f0',
+    bgGradient: 'linear-gradient(135deg, #f5f5f0 0%, #ebebe5 50%, #f5f5f0 100%)',
+    card: '#fafaf5',
+    cardBorder: '#d4d4cf',
+    text: '#2d2d2d',
+    textMuted: '#737373',
+    inputBg: '#ffffff',
+    inputBorder: '#d4d4cf',
+    inputBorderFocus: '#4f46e5',
+    primary: '#4f46e5',
+    primaryHover: '#4338ca',
     error: '#ef4444',
     errorBg: 'rgba(239, 68, 68, 0.1)'
   };
@@ -106,7 +107,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             fontSize: '32px',
             boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4)'
           }}>
-            🔐
+            🤖
           </div>
           <h1 style={{
             margin: '0 0 8px 0',
@@ -116,7 +117,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             letterSpacing: '-0.5px',
             transition: 'color 0.3s ease'
           }}>
-            RAG Application
+            Samson Chat
           </h1>
           <p style={{
             color: colors.textMuted,

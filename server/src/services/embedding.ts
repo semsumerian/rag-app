@@ -1,15 +1,20 @@
 import OpenAI from 'openai';
-import { config } from '../config';
+import { getEmbeddingConfig } from './settingsStore';
 
-const openai = new OpenAI({
-  baseURL: config.lmStudio.baseURL,
-  apiKey: 'not-needed'
-});
+function createOpenAIClient() {
+  const embeddingConfig = getEmbeddingConfig();
+  return new OpenAI({
+    baseURL: embeddingConfig.url,
+    apiKey: embeddingConfig.apiKey || 'not-needed'
+  });
+}
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    const openai = createOpenAIClient();
+    const embeddingConfig = getEmbeddingConfig();
     const response = await openai.embeddings.create({
-      model: config.lmStudio.embeddingModel,
+      model: embeddingConfig.modelName,
       input: text
     });
     
