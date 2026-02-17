@@ -24,7 +24,11 @@ const DocumentIcon = () => (
   </svg>
 );
 
-const ChatInterface: React.FC = () => {
+interface ChatInterfaceProps {
+  isMobile?: boolean;
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -291,7 +295,7 @@ const ChatInterface: React.FC = () => {
         style={{ 
           flex: 1, 
           overflow: 'auto', 
-          padding: messages.length === 0 ? '0' : '0 0 140px 0',
+          padding: messages.length === 0 ? '0' : (isMobile ? '0 0 120px 0' : '0 0 140px 0'),
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -305,35 +309,37 @@ const ChatInterface: React.FC = () => {
             width: '100%',
             minHeight: '100%',
             color: colors.textMuted,
-            padding: '20px',
+            padding: isMobile ? '16px' : '20px',
           }}>
             {/* Bot icon and text in one row */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
+              flexDirection: isMobile ? 'column' : 'row',
               gap: '16px',
               marginBottom: '32px',
             }}>
               <div style={{ 
-                width: '48px', 
-                height: '48px', 
+                width: isMobile ? '42px' : '48px', 
+                height: isMobile ? '42px' : '48px', 
                 background: `linear-gradient(135deg, #509fff, #4166d5)`,
                 borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '24px',
+                fontSize: isMobile ? '21px' : '24px',
                 boxShadow: '0 10px 25px -5px rgba(80, 159, 255, 0.4)',
                 flexShrink: 0,
               }}>
                 🤖
               </div>
               <p style={{ 
-                fontSize: '28px', 
+                fontSize: isMobile ? '22px' : '28px', 
                 fontWeight: '600', 
                 color: colors.text,
                 margin: 0,
+                textAlign: 'center',
               }}>
                 Чем могу помочь?
               </p>
@@ -349,7 +355,7 @@ const ChatInterface: React.FC = () => {
                 onSubmit={handleSubmit}
                 style={{
                   width: '100%',
-                  maxWidth: '700px',
+                  maxWidth: isMobile ? '100%' : '700px',
                   margin: '0 auto',
                   display: 'flex',
                   alignItems: 'flex-end',
@@ -357,7 +363,7 @@ const ChatInterface: React.FC = () => {
                   backgroundColor: colors.bgInput,
                   border: `1px solid ${colors.border}`,
                   borderRadius: '16px',
-                  padding: '12px 16px',
+                  padding: isMobile ? '10px 12px' : '12px 16px',
                   boxShadow: isDark 
                     ? '0 4px 20px rgba(0, 0, 0, 0.4)' 
                     : '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -382,7 +388,7 @@ const ChatInterface: React.FC = () => {
                     padding: '4px 0',
                     backgroundColor: 'transparent',
                     border: 'none',
-                    fontSize: '16px',
+                    fontSize: isMobile ? '15px' : '16px',
                     outline: 'none',
                     color: colors.text,
                     fontFamily: 'inherit',
@@ -395,7 +401,7 @@ const ChatInterface: React.FC = () => {
                   type="submit"
                   disabled={loading || !input.trim()}
                   style={{
-                    padding: '8px 10px',
+                    padding: isMobile ? '8px 9px' : '8px 10px',
                     backgroundColor: loading || !input.trim() ? 'transparent' : colors.primary,
                     color: loading || !input.trim() ? colors.textMuted : 'white',
                     border: 'none',
@@ -438,7 +444,7 @@ const ChatInterface: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div style={{ width: '100%', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ width: '100%', padding: isMobile ? '12px 0' : '20px 0', display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '24px' }}>
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -449,24 +455,24 @@ const ChatInterface: React.FC = () => {
                   marginBottom: '8px',
                   width: '100%',
                   justifyContent: msg.role === 'user' ? 'flex-start' : 'flex-start',
-                  paddingLeft: msg.role === 'user' ? '0' : '80px',
-                  paddingRight: msg.role === 'user' ? '80px' : '0',
+                  paddingLeft: msg.role === 'user' ? '0' : (isMobile ? '10px' : '80px'),
+                  paddingRight: msg.role === 'user' ? (isMobile ? '10px' : '80px') : '0',
                   boxSizing: 'border-box',
                 }}
               >
                 {/* Avatar */}
                 <div style={{
-                  width: '28px',
-                  height: '28px',
+                  width: isMobile ? '24px' : '28px',
+                  height: isMobile ? '24px' : '28px',
                   borderRadius: '50%',
                   backgroundColor: msg.role === 'user' ? colors.primary : colors.bgSecondary,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginLeft: msg.role === 'user' ? '16px' : '0',
-                  marginRight: msg.role === 'user' ? '0' : '16px',
+                  marginLeft: msg.role === 'user' ? (isMobile ? '8px' : '16px') : '0',
+                  marginRight: msg.role === 'user' ? '0' : (isMobile ? '8px' : '16px'),
                   flexShrink: 0,
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   fontWeight: '600',
                   color: msg.role === 'user' ? 'white' : colors.text,
                   marginTop: msg.role === 'assistant' ? '4px' : '4px',
@@ -477,10 +483,10 @@ const ChatInterface: React.FC = () => {
                 {/* Message Content */}
                 <div
                   style={{
-                    maxWidth: '70%',
+                    maxWidth: isMobile ? '84%' : '70%',
                     padding: '4px 0',
                     color: colors.text,
-                    fontSize: '15px',
+                    fontSize: isMobile ? '14px' : '15px',
                     lineHeight: '1.6',
                     textAlign: 'left',
                     wordBreak: 'break-word',
@@ -525,14 +531,16 @@ const ChatInterface: React.FC = () => {
       {sources.length > 0 && (
         <div style={{ 
           position: 'absolute',
-          bottom: '100px',
-          left: '20px',
-          right: '20px',
-          padding: '12px 16px', 
+          bottom: isMobile ? '92px' : '100px',
+          left: isMobile ? '12px' : '20px',
+          right: isMobile ? '12px' : '20px',
+          padding: isMobile ? '10px 12px' : '12px 16px', 
           backgroundColor: isDark ? 'rgba(80, 159, 255, 0.1)' : 'rgba(80, 159, 255, 0.1)', 
           borderRadius: '12px',
           border: `1px solid ${colors.border}`,
           zIndex: 10,
+          maxHeight: isMobile ? '120px' : 'none',
+          overflow: isMobile ? 'auto' : 'visible',
         }}>
           <div style={{ 
             fontSize: '12px', 
@@ -583,7 +591,7 @@ const ChatInterface: React.FC = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          padding: '20px 20px 30px 20px',
+          padding: isMobile ? '12px 12px 14px 12px' : '20px 20px 30px 20px',
           background: isDark 
             ? 'linear-gradient(to top, #292a2d 0%, #292a2d 80%, transparent 100%)' 
             : 'linear-gradient(to top, #f1f5f9 0%, #f1f5f9 80%, transparent 100%)',
@@ -599,8 +607,8 @@ const ChatInterface: React.FC = () => {
                 gap: '8px',
                 backgroundColor: colors.bgInput,
                 border: `1px solid ${colors.border}`,
-                borderRadius: '16px',
-                padding: '12px 16px',
+                borderRadius: isMobile ? '14px' : '16px',
+                padding: isMobile ? '10px 12px' : '12px 16px',
                 boxShadow: isDark 
                   ? '0 4px 20px rgba(0, 0, 0, 0.4)' 
                   : '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -625,7 +633,7 @@ const ChatInterface: React.FC = () => {
                   padding: '4px 0',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  fontSize: '16px',
+                  fontSize: isMobile ? '15px' : '16px',
                   outline: 'none',
                   color: colors.text,
                   fontFamily: 'inherit',
@@ -638,7 +646,7 @@ const ChatInterface: React.FC = () => {
                 type="submit"
                 disabled={loading || !input.trim()}
                 style={{
-                  padding: '8px 10px',
+                  padding: isMobile ? '8px 9px' : '8px 10px',
                   backgroundColor: loading || !input.trim() ? 'transparent' : colors.primary,
                   color: loading || !input.trim() ? colors.textMuted : 'white',
                   border: 'none',

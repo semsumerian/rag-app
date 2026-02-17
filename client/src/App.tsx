@@ -19,6 +19,14 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {}
 });
 
+const getIsMobileLayout = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.matchMedia('(max-width: 900px)').matches;
+};
+
 // Icons as components
 const MenuIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -69,7 +77,28 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [theme, setTheme] = useState<Theme>('dark');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState<boolean>(getIsMobileLayout);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => !getIsMobileLayout());
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 900px)');
+
+    const updateLayout = () => {
+      const mobile = mediaQuery.matches;
+      setIsMobile(mobile);
+
+      if (!mobile) {
+        setSidebarOpen(true);
+      }
+    };
+
+    updateLayout();
+    mediaQuery.addEventListener('change', updateLayout);
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateLayout);
+    };
+  }, []);
 
   // Load theme from localStorage
   useEffect(() => {
@@ -187,19 +216,28 @@ function App() {
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           color: colors.text,
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
         {/* Sidebar */}
         <aside 
           style={{
-            width: sidebarOpen ? '260px' : '0',
-            minWidth: sidebarOpen ? '260px' : '0',
+            width: isMobile ? '280px' : (sidebarOpen ? '260px' : '0'),
+            minWidth: isMobile ? '280px' : (sidebarOpen ? '260px' : '0'),
             backgroundColor: colors.bgSidebar,
             borderRight: `1px solid ${colors.border}`,
             display: 'flex',
             flexDirection: 'column',
-            transition: 'all 0.3s ease',
+            transition: 'transform 0.25s ease, width 0.25s ease, min-width 0.25s ease',
             overflow: 'hidden',
+            position: isMobile ? 'fixed' : 'relative',
+            top: isMobile ? 0 : 'auto',
+            left: isMobile ? 0 : 'auto',
+            bottom: isMobile ? 0 : 'auto',
+            zIndex: isMobile ? 40 : 'auto',
+            transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
+            pointerEvents: isMobile && !sidebarOpen ? 'none' : 'auto',
+            boxShadow: isMobile && sidebarOpen ? '0 16px 40px rgba(0, 0, 0, 0.35)' : 'none',
           }}
         >
           {/* Sidebar Header */}
@@ -347,7 +385,12 @@ function App() {
 
             {/* Settings */}
             <button
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => {
+                setIsSettingsOpen(true);
+                if (isMobile) {
+                  setSidebarOpen(false);
+                }
+              }}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -460,6 +503,18 @@ function App() {
           </div>
         </aside>
 
+        {isMobile && sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.45)',
+              zIndex: 30,
+            }}
+          />
+        )}
+
         {/* Main Content */}
         <main style={{ 
           flex: 1,
@@ -481,7 +536,7 @@ function App() {
               alignItems: 'center',
               gap: '12px',
             }}>
-              {!sidebarOpen && (
+              {(isMobile || !sidebarOpen) && (
                 <button
                   onClick={() => setSidebarOpen(true)}
                   style={{
@@ -505,6 +560,16 @@ function App() {
                 >
                   <MenuIcon />
                 </button>
+              )}
+
+              {isMobile && (
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: colors.textSecondary,
+                }}>
+                  Samson Chat
+                </span>
               )}
             </div>
           </header>
@@ -537,7 +602,7 @@ function App() {
             display: 'flex',
             flexDirection: 'column',
           }}>
-            <ChatInterface />
+            <ChatInterface isMobile={isMobile} />
           </div>
         </main>
 
