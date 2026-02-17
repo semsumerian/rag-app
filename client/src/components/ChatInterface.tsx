@@ -37,6 +37,24 @@ const ChatInterface: React.FC = () => {
   const isDark = theme === 'dark';
   const colors = getDeepSeekColors(isDark);
 
+  const normalizeFilename = (filename: string): string => {
+    if (/[А-Яа-яЁё]/.test(filename)) {
+      return filename;
+    }
+
+    if (!/[ÐÑ]/.test(filename)) {
+      return filename;
+    }
+
+    try {
+      const bytes = Uint8Array.from(filename, (char) => char.charCodeAt(0) & 0xff);
+      const decoded = new TextDecoder('utf-8').decode(bytes);
+      return decoded.includes('�') ? filename : decoded;
+    } catch {
+      return filename;
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -104,7 +122,6 @@ const ChatInterface: React.FC = () => {
   // Markdown components
   const markdownComponents = {
     code({ node, inline, className, children, ...props }: any) {
-      const match = /language-(\w+)/.exec(className || '');
       return !inline ? (
         <pre
           style={{
@@ -138,25 +155,40 @@ const ChatInterface: React.FC = () => {
       );
     },
     p({ children }: any) {
-      return <p style={{ margin: '8px 0', lineHeight: '28px' }}>{children}</p>;
+      return <p style={{ margin: '0 0 8px 0', lineHeight: '1.5' }}>{children}</p>;
     },
     h1({ children }: any) {
-      return <h1 style={{ margin: '16px 0 12px 0', fontSize: '20px', fontWeight: '600' }}>{children}</h1>;
+      return <h1 style={{ margin: '8px 0 6px 0', fontSize: '18px', fontWeight: '600' }}>{children}</h1>;
     },
     h2({ children }: any) {
-      return <h2 style={{ margin: '14px 0 10px 0', fontSize: '18px', fontWeight: '600' }}>{children}</h2>;
+      return <h2 style={{ margin: '6px 0 4px 0', fontSize: '16px', fontWeight: '600' }}>{children}</h2>;
     },
     h3({ children }: any) {
-      return <h3 style={{ margin: '12px 0 8px 0', fontSize: '16px', fontWeight: '600' }}>{children}</h3>;
+      return <h3 style={{ margin: '4px 0 2px 0', fontSize: '15px', fontWeight: '600' }}>{children}</h3>;
     },
     ul({ children }: any) {
-      return <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>;
+      return <ul style={{ margin: '6px 0 10px 0', paddingLeft: '18px' }}>{children}</ul>;
     },
     ol({ children }: any) {
-      return <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>;
+      return <ol style={{ margin: '6px 0 10px 0', paddingLeft: '18px' }}>{children}</ol>;
     },
     li({ children }: any) {
-      return <li style={{ margin: '4px 0', lineHeight: '28px' }}>{children}</li>;
+      const normalizedChildren = React.Children.map(children, (child) => {
+        if (React.isValidElement(child) && child.type === 'p') {
+          const paragraph = child as React.ReactElement<{ style?: React.CSSProperties }>;
+
+          return React.cloneElement(paragraph, {
+            style: {
+              ...(paragraph.props.style || {}),
+              margin: '0'
+            }
+          });
+        }
+
+        return child;
+      });
+
+      return <li style={{ margin: '2px 0', lineHeight: '1.5' }}>{normalizedChildren}</li>;
     },
     strong({ children }: any) {
       return <strong style={{ fontWeight: '600' }}>{children}</strong>;
@@ -318,7 +350,7 @@ const ChatInterface: React.FC = () => {
                   display: 'flex',
                   alignItems: 'flex-end',
                   gap: '8px',
-                  backgroundColor: colors.inputBg,
+                  backgroundColor: colors.bgInput,
                   border: `1px solid ${colors.border}`,
                   borderRadius: '16px',
                   padding: '12px 16px',
@@ -444,11 +476,11 @@ const ChatInterface: React.FC = () => {
                     maxWidth: '70%',
                     padding: '4px 0',
                     color: colors.text,
-                    fontSize: '16px',
-                    lineHeight: '28px',
+                    fontSize: '15px',
+                    lineHeight: '1.6',
                     textAlign: 'left',
                     wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
+                    whiteSpace: msg.role === 'user' ? 'pre-wrap' : 'normal',
                     fontWeight: '400',
                     marginLeft: msg.role === 'user' ? 'auto' : '0',
                     marginRight: msg.role === 'user' ? '0' : 'auto',
@@ -457,12 +489,14 @@ const ChatInterface: React.FC = () => {
                   {msg.role === 'user' ? (
                     <div style={{ fontWeight: '500' }}>{msg.content}</div>
                   ) : (
-                    <ReactMarkdown 
-                      remarkPlugins={[remarkGfm]}
-                      components={markdownComponents}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
+                    <div className="chat-markdown">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownComponents}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   )}
                   {msg.role === 'assistant' && loading && index === messages.length - 1 && (
                     <span style={{ 
@@ -509,27 +543,31 @@ const ChatInterface: React.FC = () => {
             Источники ({sources.length}):
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {sources.map((source, idx) => (
-              <span
-                key={idx}
-                style={{
-                  fontSize: '11px',
-                  padding: '4px 10px',
-                  backgroundColor: isDark ? 'rgba(80, 159, 255, 0.2)' : 'rgba(80, 159, 255, 0.15)',
-                  color: isDark ? '#509fff' : '#509fff',
-                  borderRadius: '20px',
-                  fontWeight: '500',
-                  cursor: 'help',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-                title={source.content.substring(0, 100) + '...'}
-              >
-                <DocumentIcon />
-                {source.filename}
-              </span>
-            ))}
+            {sources.map((source, idx) => {
+              const displayFilename = normalizeFilename(source.filename);
+
+              return (
+                <span
+                  key={idx}
+                  style={{
+                    fontSize: '11px',
+                    padding: '4px 10px',
+                    backgroundColor: isDark ? 'rgba(80, 159, 255, 0.2)' : 'rgba(80, 159, 255, 0.15)',
+                    color: isDark ? '#509fff' : '#509fff',
+                    borderRadius: '20px',
+                    fontWeight: '500',
+                    cursor: 'help',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title={source.content.substring(0, 100) + '...'}
+                >
+                  <DocumentIcon />
+                  {displayFilename}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
@@ -555,7 +593,7 @@ const ChatInterface: React.FC = () => {
                 display: 'flex',
                 alignItems: 'flex-end',
                 gap: '8px',
-                backgroundColor: colors.inputBg,
+                backgroundColor: colors.bgInput,
                 border: `1px solid ${colors.border}`,
                 borderRadius: '16px',
                 padding: '12px 16px',
@@ -641,6 +679,12 @@ const ChatInterface: React.FC = () => {
       )}
 
       <style>{`
+        .chat-markdown > *:first-child {
+          margin-top: 0;
+        }
+        .chat-markdown > *:last-child {
+          margin-bottom: 0;
+        }
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }

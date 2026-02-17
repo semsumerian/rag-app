@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config';
 import { deleteDocumentChunks } from '../services/vectorStore';
-import { getAllDocuments, deleteDocument as deleteDocumentMeta } from '../services/documentStore';
+import { getAllDocuments, getDocument, deleteDocument as deleteDocumentMeta } from '../services/documentStore';
 
 const router = Router();
 
@@ -29,6 +29,11 @@ router.get('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const document = await getDocument(id);
+
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
     
     // Delete from vector store
     await deleteDocumentChunks(id);
@@ -36,12 +41,14 @@ router.delete('/:id', async (req, res) => {
     // Delete document metadata
     await deleteDocumentMeta(id);
     
-    // Find and delete file
-    const files = await fs.readdir(config.server.uploadDir);
-    const matchingFile = files.find(f => f.startsWith(id));
-    
-    if (matchingFile) {
-      await fs.unlink(path.join(config.server.uploadDir, matchingFile));
+    // Delete uploaded file by exact filename from metadata
+    try {
+      await fs.unlink(path.join(config.server.uploadDir, document.filename));
+    } catch (fileError) {
+      const error = fileError as NodeJS.ErrnoException;
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
     }
     
     res.json({ success: true });

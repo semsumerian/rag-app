@@ -13,6 +13,23 @@ import { Chunk, Document } from '../types';
 
 const router = Router();
 
+function normalizeOriginalName(originalName: string): string {
+  if (/[А-Яа-яЁё]/.test(originalName)) {
+    return originalName;
+  }
+
+  if (!/[ÐÑ]/.test(originalName)) {
+    return originalName;
+  }
+
+  try {
+    const decoded = Buffer.from(originalName, 'latin1').toString('utf8');
+    return decoded.includes('�') ? originalName : decoded;
+  } catch {
+    return originalName;
+  }
+}
+
 // Ensure upload directory exists
 async function ensureUploadDir() {
   try {
@@ -62,16 +79,17 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     const documentId = uuidv4();
     const { filename, originalname, mimetype, size } = req.file;
+    const originalName = normalizeOriginalName(originalname);
     const filePath = path.join(config.server.uploadDir, filename);
 
-    console.log(`Processing file: ${originalname} (${mimetype})`);
+    console.log(`Processing file: ${originalName} (${mimetype})`);
 
     // Parse document
     const text = await parseDocument(filePath, mimetype);
     console.log(`Parsed ${text.length} characters`);
 
     // Chunk text
-    const chunks = chunkText(text, documentId, originalname);
+    const chunks = chunkText(text, documentId, originalName);
     console.log(`Created ${chunks.length} chunks`);
 
     // Generate embeddings
@@ -81,16 +99,16 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     // Prepare chunks with embeddings
     const chunksWithEmbeddings: Chunk[] = chunks.map((chunk, index) => ({
-      id: uuidv4(),
-      documentId,
-      content: chunk.content,
-      embedding: embeddings[index],
-      metadata: {
-        filename: originalname,
-        chunkIndex: chunk.metadata.chunkIndex,
-        totalChunks: chunk.metadata.totalChunks
-      }
-    }));
+        id: uuidv4(),
+        documentId,
+        content: chunk.content,
+        embedding: embeddings[index],
+        metadata: {
+          filename: originalName,
+          chunkIndex: chunk.metadata.chunkIndex,
+          totalChunks: chunk.metadata.totalChunks
+        }
+      }));
 
     // Add to vector store
     await addChunks(chunksWithEmbeddings);
@@ -100,7 +118,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     const document: Document = {
       id: documentId,
       filename,
-      originalName: originalname,
+      originalName,
       mimeType: mimetype,
       size,
       uploadedAt: new Date(),
@@ -111,7 +129,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     await addDocument({
       id: documentId,
       filename,
-      originalName: originalname,
+      originalName,
       mimeType: mimetype,
       size,
       uploadedAt: new Date().toISOString(),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings as SettingsType, ModelSettings } from '../types';
 import { getSettings, updateSettings } from '../services/api';
 import FileUploader from './FileUploader';

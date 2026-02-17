@@ -1,6 +1,5 @@
 import React, { useState, useContext } from 'react';
 import { ThemeContext } from '../App';
-import { getDeepSeekColors } from '../styles/deepseek';
 
 interface LoginProps {
   onLogin: () => void;
