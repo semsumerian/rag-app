@@ -25,6 +25,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload, uploading }) => {
     accept: {
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
       'text/plain': ['.txt']
     },
     disabled: uploading,
@@ -95,7 +96,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload, uploading }) => {
             Перетащите файлы сюда или кликните для выбора
           </p>
           <p style={{ color: colors.textMuted, fontSize: '14px', margin: 0 }}>
-            Поддерживаемые форматы: PDF, DOCX, TXT
+            Поддерживаемые форматы: PDF, DOC, DOCX, TXT
           </p>
         </div>
       )}

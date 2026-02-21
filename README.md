@@ -2,7 +2,7 @@
 
 ## Обзор системы
 
-RAG (Retrieval-Augmented Generation) Application - это полнофункциональное веб-приложение для интеллектуальной работы с документами через LLM модели. Система позволяет загружать документы (PDF, DOCX, TXT), индексировать их содержимое и вести осмысленный диалог с AI, который опирается на контекст загруженных документов.
+RAG (Retrieval-Augmented Generation) Application - это полнофункциональное веб-приложение для интеллектуальной работы с документами через LLM модели. Система позволяет загружать документы (PDF, DOC, DOCX, TXT), индексировать их содержимое и вести осмысленный диалог с AI, который опирается на контекст загруженных документов.
 
 ## Архитектура системы
 
@@ -170,7 +170,7 @@ DocumentStore сохраняет метаданные документа
 ### Реализованные фичи
 
 1. **Загрузка документов**
-   - Поддержка PDF, DOCX, TXT
+   - Поддержка PDF, DOC, DOCX, TXT
    - Drag & drop интерфейс
    - Прогресс загрузки
 
@@ -198,23 +198,97 @@ DocumentStore сохраняет метаданные документа
 ## Запуск системы
 
 ### Требования
-- Windows 10/11
+- macOS / Linux / Windows 10/11
 - Node.js LTS
 - LM Studio с запущенным API
+- (Опционально) cloudflared для внешнего доступа
 
-### Команды
+Проверка окружения:
+
+```bash
+node -v
+npm -v
+```
+
+### Запуск на macOS/Linux
+
+Откройте два терминала.
+
+Терминал 1 (сервер):
+
+```bash
+cd /Users/semen/RAG/rag-app/server
+npm install
+npm run dev
+```
+
+Терминал 2 (клиент):
+
+```bash
+cd /Users/semen/RAG/rag-app/client
+npm install
+npm run dev
+```
+
+После запуска откройте:
+
+```text
+http://localhost:5173
+```
+
+Проверка сервера:
+
+```text
+http://localhost:3000/health
+```
+
+Ожидаемый ответ:
+
+```json
+{"status":"ok"}
+```
+
+### Туннель (опционально)
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+### Запуск на Windows
 
 ```powershell
-# Сервер
-cd server
+cd C:\Users\<username>\RAG\rag-app\server
 npm install
 npm run dev
 
-# Клиент
-cd client
+cd C:\Users\<username>\RAG\rag-app\client
 npm install
 npm run dev
+```
 
-# Туннель (опционально)
+Для Windows команда туннеля:
+
+```powershell
 cloudflared.exe tunnel --url http://localhost:5173
+```
+
+### Частые проблемы на macOS
+
+1. `npm: command not found`
+   - Установите Node.js LTS и перезапустите Terminal.
+
+2. `EACCES` в `~/.npm`
+   - Исправьте права и повторите установку зависимостей:
+
+```bash
+sudo chown -R "$(id -u):$(id -g)" ~/.npm
+```
+
+3. `Cannot find module @rollup/rollup-darwin-arm64`
+   - Переустановите зависимости клиента:
+
+```bash
+cd /Users/semen/RAG/rag-app/client
+rm -rf node_modules package-lock.json
+npm install
 ```

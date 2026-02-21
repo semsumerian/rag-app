@@ -19,7 +19,8 @@
     "openai": "^4.77.0",
     "pdf-parse": "^1.1.1",
     "unzipper": "^0.12.3",
-    "uuid": "^11.0.3"
+    "uuid": "^11.0.3",
+    "word-extractor": "^1.0.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

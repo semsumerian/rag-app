@@ -56,16 +56,21 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024 // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
+    const allowedMimeTypes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
       'text/plain'
     ];
-    
-    if (allowedTypes.includes(file.mimetype)) {
+    const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    const isAllowedByMimeType = allowedMimeTypes.includes(file.mimetype);
+    const isAllowedByExtension = allowedExtensions.includes(fileExtension);
+
+    if (isAllowedByMimeType || (file.mimetype === 'application/octet-stream' && isAllowedByExtension)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type ${file.mimetype} is not supported. Only PDF, DOCX, and TXT files are allowed.`));
+      cb(new Error(`File type ${file.mimetype} is not supported. Only PDF, DOC, DOCX, and TXT files are allowed.`));
     }
   }
 });
@@ -85,7 +90,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     console.log(`Processing file: ${originalName} (${mimetype})`);
 
     // Parse document
-    const text = await parseDocument(filePath, mimetype);
+    const text = await parseDocument(filePath, mimetype, originalName);
     console.log(`Parsed ${text.length} characters`);
 
     // Chunk text
