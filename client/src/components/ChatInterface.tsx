@@ -34,6 +34,7 @@ const DocumentIcon = () => (
 interface ChatInterfaceProps {
   isMobile?: boolean;
   sessionId: string;
+  onEnsureSession?: () => string;
 }
 
 const areMessagesEqual = (a: ChatMessage[], b: ChatMessage[]): boolean => {
@@ -47,12 +48,12 @@ const areMessagesEqual = (a: ChatMessage[], b: ChatMessage[]): boolean => {
   });
 };
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, sessionId }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, sessionId, onEnsureSession }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
-  const [sessionHydrated, setSessionHydrated] = useState(false);
+  const [hydratedSessionId, setHydratedSessionId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -91,24 +92,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, session
     if (!sessionId) {
       setMessages([]);
       setSources([]);
-      setSessionHydrated(false);
+      setHydratedSessionId('');
       return;
     }
 
     const session = getChatSessionById(sessionId) || ensureChatSession(sessionId);
     setMessages(session.messages);
     setSources([]);
-    setLoading(false);
-    setSessionHydrated(true);
+    setHydratedSessionId(sessionId);
   }, [sessionId]);
 
   useEffect(() => {
-    if (!sessionHydrated || !sessionId) {
+    if (!hydratedSessionId) {
       return;
     }
 
-    updateChatSessionMessages(sessionId, messages);
-  }, [messages, sessionHydrated, sessionId]);
+    updateChatSessionMessages(hydratedSessionId, messages);
+  }, [messages, hydratedSessionId]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -159,16 +159,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, session
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionId || !input.trim() || loading) return;
+    if (!input.trim() || loading) return;
+
+    const targetSessionId = sessionId || onEnsureSession?.() || '';
+    if (!targetSessionId) return;
+
+    setHydratedSessionId(targetSessionId);
 
     const userMessage = input.trim();
     setInput('');
     setLoading(true);
     setSources([]);
 
-    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: userMessage }];
-    setMessages(newMessages);
-    setMessages([...newMessages, { role: 'assistant', content: '' }]);
+    const pendingMessages: ChatMessage[] = [
+      ...messages,
+      { role: 'user', content: userMessage },
+      { role: 'assistant', content: '' },
+    ];
+
+    setMessages(pendingMessages);
+    updateChatSessionMessages(targetSessionId, pendingMessages);
 
     try {
       const stream = streamChat(userMessage, messages);
@@ -180,8 +190,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, session
         } else if (chunk.type === 'chunk') {
           fullResponse += chunk.content;
           setMessages(prev => {
-            const updated = [...prev];
-            updated[updated.length - 1] = { role: 'assistant', content: fullResponse };
+            const updated = prev.length > 0 ? [...prev] : [...pendingMessages];
+            const lastMessage = updated[updated.length - 1];
+
+            if (!lastMessage || lastMessage.role !== 'assistant') {
+              updated.push({ role: 'assistant', content: fullResponse });
+            } else {
+              updated[updated.length - 1] = { role: 'assistant', content: fullResponse };
+            }
+
             return updated;
           });
         } else if (chunk.type === 'done') {
@@ -193,11 +210,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, session
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => {
-        const updated = [...prev];
-        updated[updated.length - 1] = { 
-          role: 'assistant', 
-          content: '❌ Произошла ошибка при генерации ответа. Пожалуйста, попробуйте снова.' 
-        };
+        const updated = prev.length > 0 ? [...prev] : [...pendingMessages];
+        const errorMessage = '❌ Произошла ошибка при генерации ответа. Пожалуйста, попробуйте снова.';
+        const lastMessage = updated[updated.length - 1];
+
+        if (!lastMessage || lastMessage.role !== 'assistant') {
+          updated.push({ role: 'assistant', content: errorMessage });
+        } else {
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: errorMessage,
+          };
+        }
+
         return updated;
       });
     } finally {

@@ -94,20 +94,11 @@ const LogoutIcon = () => (
   </svg>
 );
 
-const EditIcon = () => (
+const MoreIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 20h9"></path>
-    <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-    <path d="M10 11v6"></path>
-    <path d="M14 11v6"></path>
-    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+    <circle cx="12" cy="5" r="1"></circle>
+    <circle cx="12" cy="12" r="1"></circle>
+    <circle cx="12" cy="19" r="1"></circle>
   </svg>
 );
 
@@ -121,6 +112,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => !getIsMobileLayout());
   const [chatSessions, setChatSessions] = useState<StoredChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>('');
+  const [menuSessionId, setMenuSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 900px)');
@@ -172,10 +164,18 @@ function App() {
     const sessions = readChatSessions();
 
     if (sessions.length === 0) {
-      const initialSession = createChatSession();
-      writeChatSessions([initialSession]);
-      setChatSessions([initialSession]);
-      setActiveSessionId(initialSession.id);
+      const hasStoredSessions = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) !== null;
+
+      if (!hasStoredSessions) {
+        const initialSession = createChatSession();
+        writeChatSessions([initialSession]);
+        setChatSessions([initialSession]);
+        setActiveSessionId(initialSession.id);
+        return;
+      }
+
+      setChatSessions([]);
+      setActiveSessionId('');
       return;
     }
 
@@ -190,6 +190,21 @@ function App() {
 
     refreshChatSessions();
   }, [isAuthenticated, refreshChatSessions]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest('[data-session-menu]')) {
+        setMenuSessionId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -247,6 +262,7 @@ function App() {
     const existingSessions = readChatSessions();
     writeChatSessions([newSession, ...existingSessions]);
     setActiveSessionId(newSession.id);
+    setMenuSessionId(null);
 
     if (isMobile) {
       setSidebarOpen(false);
@@ -255,6 +271,7 @@ function App() {
 
   const handleSelectSession = (sessionId: string) => {
     setActiveSessionId(sessionId);
+    setMenuSessionId(null);
 
     if (isMobile) {
       setSidebarOpen(false);
@@ -262,6 +279,7 @@ function App() {
   };
 
   const handleRenameSession = (sessionId: string, currentTitle: string) => {
+    setMenuSessionId(null);
     const nextTitle = window.prompt('Введите новое название чата', currentTitle);
 
     if (nextTitle === null) {
@@ -272,7 +290,28 @@ function App() {
     refreshChatSessions();
   };
 
+  const ensureActiveSession = useCallback((): string => {
+    if (activeSessionId) {
+      return activeSessionId;
+    }
+
+    const sessions = readChatSessions();
+
+    if (sessions.length > 0) {
+      setActiveSessionId(sessions[0].id);
+      return sessions[0].id;
+    }
+
+    const newSession = createChatSession();
+    writeChatSessions([newSession]);
+    setChatSessions([newSession]);
+    setActiveSessionId(newSession.id);
+
+    return newSession.id;
+  }, [activeSessionId]);
+
   const handleDeleteSession = (sessionId: string, title: string) => {
+    setMenuSessionId(null);
     const confirmed = window.confirm(`Удалить чат "${title}"?`);
     if (!confirmed) {
       return;
@@ -280,15 +319,8 @@ function App() {
 
     const remainingSessions = deleteChatSession(sessionId);
 
-    if (remainingSessions.length === 0) {
-      const freshSession = createChatSession();
-      writeChatSessions([freshSession]);
-      setActiveSessionId(freshSession.id);
-      return;
-    }
-
     if (activeSessionId === sessionId) {
-      setActiveSessionId(remainingSessions[0].id);
+      setActiveSessionId(remainingSessions[0]?.id || '');
     }
 
     refreshChatSessions();
@@ -498,6 +530,7 @@ function App() {
                 <div
                   key={session.id}
                   style={{
+                    position: 'relative',
                     width: '100%',
                     borderRadius: '10px',
                     backgroundColor: isActive ? colors.bgActive : 'transparent',
@@ -554,11 +587,12 @@ function App() {
                   </button>
 
                   <button
+                    data-session-menu
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRenameSession(session.id, session.title);
+                      setMenuSessionId((prev) => (prev === session.id ? null : session.id));
                     }}
-                    title="Переименовать чат"
+                    title="Меню чата"
                     style={{
                       width: '28px',
                       height: '28px',
@@ -581,39 +615,73 @@ function App() {
                       e.currentTarget.style.color = colors.textMuted;
                     }}
                   >
-                    <EditIcon />
+                    <MoreIcon />
                   </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteSession(session.id, session.title);
-                    }}
-                    title="Удалить чат"
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      backgroundColor: 'transparent',
-                      color: colors.textMuted,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.1)';
-                      e.currentTarget.style.color = '#ef4444';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = colors.textMuted;
-                    }}
-                  >
-                    <TrashIcon />
-                  </button>
+                  {menuSessionId === session.id && (
+                    <div
+                      data-session-menu
+                      style={{
+                        position: 'absolute',
+                        top: '36px',
+                        right: '8px',
+                        minWidth: '170px',
+                        backgroundColor: colors.bgSecondary,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: '10px',
+                        boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.45)' : '0 10px 30px rgba(0, 0, 0, 0.16)',
+                        overflow: 'hidden',
+                        zIndex: 20,
+                      }}
+                    >
+                      <button
+                        data-session-menu
+                        onClick={() => handleRenameSession(session.id, session.title)}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          backgroundColor: 'transparent',
+                          color: colors.text,
+                          padding: '10px 12px',
+                          fontSize: '13px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.bgHover;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        Переименовать
+                      </button>
+
+                      <button
+                        data-session-menu
+                        onClick={() => handleDeleteSession(session.id, session.title)}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          backgroundColor: 'transparent',
+                          color: '#ef4444',
+                          padding: '10px 12px',
+                          fontSize: '13px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          borderTop: `1px solid ${colors.border}`,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        Удалить чат
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -883,6 +951,7 @@ function App() {
             <ChatInterface
               isMobile={isMobile}
               sessionId={activeSessionId}
+              onEnsureSession={ensureActiveSession}
             />
           </div>
         </main>
