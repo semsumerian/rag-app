@@ -1,10 +1,20 @@
-import { useState, useEffect, createContext } from 'react';
+import { useState, useEffect, createContext, useCallback } from 'react';
 import ChatInterface from './components/ChatInterface';
 import Login from './components/Login';
 import Settings from './components/Settings';
 import { getDocuments, deleteDocument, uploadFile } from './services/api';
 import { Document } from './types';
 import { getDeepSeekColors } from './styles/deepseek';
+import {
+  CHAT_SESSIONS_STORAGE_KEY,
+  CHAT_SESSIONS_UPDATED_EVENT,
+  StoredChatSession,
+  createChatSession,
+  deleteChatSession,
+  renameChatSession,
+  readChatSessions,
+  writeChatSessions,
+} from './utils/chatSessions';
 
 // Theme types
 type Theme = 'dark' | 'light';
@@ -25,6 +35,19 @@ const getIsMobileLayout = (): boolean => {
   }
 
   return window.matchMedia('(max-width: 900px)').matches;
+};
+
+const formatSessionTime = (value: string): string => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 // Icons as components
@@ -71,6 +94,23 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const EditIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9"></path>
+    <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+    <path d="M10 11v6"></path>
+    <path d="M14 11v6"></path>
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+  </svg>
+);
+
 function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +119,8 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(getIsMobileLayout);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => !getIsMobileLayout());
+  const [chatSessions, setChatSessions] = useState<StoredChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string>('');
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 900px)');
@@ -126,6 +168,55 @@ function App() {
     }
   }, [isAuthenticated]);
 
+  const refreshChatSessions = useCallback(() => {
+    const sessions = readChatSessions();
+
+    if (sessions.length === 0) {
+      const initialSession = createChatSession();
+      writeChatSessions([initialSession]);
+      setChatSessions([initialSession]);
+      setActiveSessionId(initialSession.id);
+      return;
+    }
+
+    setChatSessions(sessions);
+    setActiveSessionId((prev) => (sessions.some((session) => session.id === prev) ? prev : sessions[0].id));
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    refreshChatSessions();
+  }, [isAuthenticated, refreshChatSessions]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (event.key !== CHAT_SESSIONS_STORAGE_KEY) {
+        return;
+      }
+
+      refreshChatSessions();
+    };
+
+    const handleInternalUpdate = () => {
+      refreshChatSessions();
+    };
+
+    window.addEventListener('storage', handleStorageUpdate);
+    window.addEventListener(CHAT_SESSIONS_UPDATED_EVENT, handleInternalUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageUpdate);
+      window.removeEventListener(CHAT_SESSIONS_UPDATED_EVENT, handleInternalUpdate);
+    };
+  }, [isAuthenticated, refreshChatSessions]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
@@ -145,12 +236,62 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('rag_auth');
+    localStorage.removeItem(CHAT_SESSIONS_STORAGE_KEY);
+    setChatSessions([]);
+    setActiveSessionId('');
     setIsAuthenticated(false);
   };
 
   const handleNewChat = () => {
-    // Clear chat messages in ChatInterface would need to be implemented
-    window.location.reload(); // Simple reset for now
+    const newSession = createChatSession();
+    const existingSessions = readChatSessions();
+    writeChatSessions([newSession, ...existingSessions]);
+    setActiveSessionId(newSession.id);
+
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    setActiveSessionId(sessionId);
+
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleRenameSession = (sessionId: string, currentTitle: string) => {
+    const nextTitle = window.prompt('Введите новое название чата', currentTitle);
+
+    if (nextTitle === null) {
+      return;
+    }
+
+    renameChatSession(sessionId, nextTitle);
+    refreshChatSessions();
+  };
+
+  const handleDeleteSession = (sessionId: string, title: string) => {
+    const confirmed = window.confirm(`Удалить чат "${title}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    const remainingSessions = deleteChatSession(sessionId);
+
+    if (remainingSessions.length === 0) {
+      const freshSession = createChatSession();
+      writeChatSessions([freshSession]);
+      setActiveSessionId(freshSession.id);
+      return;
+    }
+
+    if (activeSessionId === sessionId) {
+      setActiveSessionId(remainingSessions[0].id);
+    }
+
+    refreshChatSessions();
   };
 
   const [uploading, setUploading] = useState(false);
@@ -339,6 +480,143 @@ function App() {
             >
               <span style={{ width: '100%', textAlign: 'center' }}>+ Новый чат</span>
             </button>
+          </div>
+
+          <div style={{
+            flex: 1,
+            minHeight: 0,
+            padding: '0 12px 12px 12px',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}>
+            {chatSessions.map((session) => {
+              const isActive = session.id === activeSessionId;
+
+              return (
+                <div
+                  key={session.id}
+                  style={{
+                    width: '100%',
+                    borderRadius: '10px',
+                    backgroundColor: isActive ? colors.bgActive : 'transparent',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = colors.bgHover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <button
+                    onClick={() => handleSelectSession(session.id)}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      border: 'none',
+                      borderRadius: '8px',
+                      background: 'transparent',
+                      color: isActive ? colors.text : colors.textSecondary,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      padding: '6px 8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: isActive ? '600' : '500',
+                      color: 'inherit',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {session.title}
+                    </span>
+                    <span style={{
+                      fontSize: '11px',
+                      color: colors.textMuted,
+                    }}>
+                      {formatSessionTime(session.updatedAt)}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRenameSession(session.id, session.title);
+                    }}
+                    title="Переименовать чат"
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      backgroundColor: 'transparent',
+                      color: colors.textMuted,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = colors.bgHover;
+                      e.currentTarget.style.color = colors.text;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = colors.textMuted;
+                    }}
+                  >
+                    <EditIcon />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSession(session.id, session.title);
+                    }}
+                    title="Удалить чат"
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      backgroundColor: 'transparent',
+                      color: colors.textMuted,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.1)';
+                      e.currentTarget.style.color = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = colors.textMuted;
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* Sidebar Footer */}
@@ -602,7 +880,10 @@ function App() {
             display: 'flex',
             flexDirection: 'column',
           }}>
-            <ChatInterface isMobile={isMobile} />
+            <ChatInterface
+              isMobile={isMobile}
+              sessionId={activeSessionId}
+            />
           </div>
         </main>
 

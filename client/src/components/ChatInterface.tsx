@@ -5,6 +5,13 @@ import { ChatMessage, Source } from '../types';
 import { streamChat } from '../services/api';
 import { ThemeContext } from '../App';
 import { getDeepSeekColors } from '../styles/deepseek';
+import {
+  CHAT_SESSIONS_STORAGE_KEY,
+  CHAT_SESSIONS_UPDATED_EVENT,
+  ensureChatSession,
+  getChatSessionById,
+  updateChatSessionMessages,
+} from '../utils/chatSessions';
 
 // Icons
 const SendIcon = () => (
@@ -26,13 +33,26 @@ const DocumentIcon = () => (
 
 interface ChatInterfaceProps {
   isMobile?: boolean;
+  sessionId: string;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false }) => {
+const areMessagesEqual = (a: ChatMessage[], b: ChatMessage[]): boolean => {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((message, index) => {
+    const other = b[index];
+    return message.role === other.role && message.content === other.content;
+  });
+};
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false, sessionId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -67,6 +87,68 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false }) => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (!sessionId) {
+      setMessages([]);
+      setSources([]);
+      setSessionHydrated(false);
+      return;
+    }
+
+    const session = getChatSessionById(sessionId) || ensureChatSession(sessionId);
+    setMessages(session.messages);
+    setSources([]);
+    setLoading(false);
+    setSessionHydrated(true);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionHydrated || !sessionId) {
+      return;
+    }
+
+    updateChatSessionMessages(sessionId, messages);
+  }, [messages, sessionHydrated, sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+
+    const syncCurrentSession = () => {
+      const session = getChatSessionById(sessionId);
+      if (!session) {
+        return;
+      }
+
+      setMessages((prev) => (areMessagesEqual(prev, session.messages) ? prev : session.messages));
+
+      if (session.messages.length === 0) {
+        setSources([]);
+      }
+    };
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (event.key !== CHAT_SESSIONS_STORAGE_KEY) {
+        return;
+      }
+
+      syncCurrentSession();
+    };
+
+    const handleInternalUpdate = () => {
+      syncCurrentSession();
+    };
+
+    window.addEventListener('storage', handleStorageUpdate);
+    window.addEventListener(CHAT_SESSIONS_UPDATED_EVENT, handleInternalUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageUpdate);
+      window.removeEventListener(CHAT_SESSIONS_UPDATED_EVENT, handleInternalUpdate);
+    };
+  }, [sessionId]);
+
   // Auto-resize textarea
   useEffect(() => {
     if (inputRef.current) {
@@ -77,7 +159,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isMobile = false }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    if (!sessionId || !input.trim() || loading) return;
 
     const userMessage = input.trim();
     setInput('');
